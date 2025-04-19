@@ -1,41 +1,124 @@
-# 🛡️ RugShield AI
-
-**RugShield AI** is a next-generation, AI-powered rug pull detection platform built for the Solana ecosystem — especially designed for Pump.fun traders.
-
-## 🌐 Website  
-[https://rugshieldai.com](https://rugshieldai.com)
-
-## 🧠 What It Does
-- Real-time **RugScore™** engine (0–100 risk scoring)
-- LP Lock & Unlock status detection
-- Dev Wallet behavior monitoring
-- Whale spoofing & fake volume alerts
-- Chrome Extension to scan Pump.fun in real-time
-- Backed by AI. Built for degens.
-
-## 💰 $RGAI Token Utility
-- Unlock advanced features
-- Access premium dashboards & historical alerts
-- Participate in governance (DAO)
-- Eligible for airdrops & whitelists
-
-## 🚀 Launch Timeline
-- **Q2 2025**: Extension + Token Launch  
-- **Q3 2025**: DAO + Alerts Bot  
-- **Q4 2025**: Raydium Integration + AI Market Sentiment
-
-## 📦 Project Links
-- 🌐 Website: [https://rugshieldai.com](https://rugshieldai.com)
-- 🐦 Twitter: [https://x.com/AIRugShield](https://x.com/AIRugShield)
-- 📣 Telegram: [https://t.me/AIRugshield](https://t.me/AIRugshield)
-- 📄 Whitepaper: [Download PDF](./RugShieldAI_Whitepaper_FULL.pdf)
+Please read [UPGRADE-v2.0.md](https://github.com/graphql-python/graphene/blob/master/UPGRADE-v2.0.md)
+to learn how to upgrade to Graphene `2.0`.
 
 ---
 
-## 📁 How to Use
-1. Visit [rugshieldai.com](https://rugshieldai.com)
-2. Connect Phantom Wallet
-3. Install Chrome Extension
-4. Explore real-time protection on Pump.fun
+# ![Graphene Logo](http://graphene-python.org/favicon.png) Graphene-SQLAlchemy [![Build Status](https://travis-ci.org/graphql-python/graphene-sqlalchemy.svg?branch=master)](https://travis-ci.org/graphql-python/graphene-sqlalchemy) [![PyPI version](https://badge.fury.io/py/graphene-sqlalchemy.svg)](https://badge.fury.io/py/graphene-sqlalchemy) [![Coverage Status](https://coveralls.io/repos/graphql-python/graphene-sqlalchemy/badge.svg?branch=master&service=github)](https://coveralls.io/github/graphql-python/graphene-sqlalchemy?branch=master)
 
-> ⚠️ DYOR – This is not financial advice. RugShield is a tool to aid decisions, not guarantee safety.
+
+A [SQLAlchemy](http://www.sqlalchemy.org/) integration for [Graphene](http://graphene-python.org/).
+
+## Installation
+
+For instaling graphene, just run this command in your shell
+
+```bash
+pip install "graphene-sqlalchemy>=2.0"
+```
+
+## Examples
+
+Here is a simple SQLAlchemy model:
+
+```python
+from sqlalchemy import Column, Integer, String
+from sqlalchemy.orm import relationship
+
+from sqlalchemy.ext.declarative import declarative_base
+
+Base = declarative_base()
+
+class UserModel(Base):
+    __tablename__ = 'department'
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    last_name = Column(String)
+```
+
+To create a GraphQL schema for it you simply have to write the following:
+
+```python
+from graphene_sqlalchemy import SQLAlchemyObjectType
+
+class User(SQLAlchemyObjectType):
+    class Meta:
+        model = UserModel
+        # only return specified fields
+        only_fields = ("name",)
+        # exclude specified fields
+        exclude_fields = ("last_name",)
+
+class Query(graphene.ObjectType):
+    users = graphene.List(User)
+
+    def resolve_users(self, info):
+        query = User.get_query(info)  # SQLAlchemy query
+        return query.all()
+
+schema = graphene.Schema(query=Query)
+```
+
+Then you can simply query the schema:
+
+```python
+query = '''
+    query {
+      users {
+        name,
+        lastName
+      }
+    }
+'''
+result = schema.execute(query, context_value={'session': db_session})
+```
+
+You may also subclass SQLAlchemyObjectType by providing `abstract = True` in
+your subclasses Meta:
+```python
+from graphene_sqlalchemy import SQLAlchemyObjectType
+
+class ActiveSQLAlchemyObjectType(SQLAlchemyObjectType):
+    class Meta:
+        abstract = True
+
+    @classmethod
+    def get_node(cls, info, id):
+        return cls.get_query(info).filter(
+            and_(cls._meta.model.deleted_at==None,
+                 cls._meta.model.id==id)
+            ).first()
+
+class User(ActiveSQLAlchemyObjectType):
+    class Meta:
+        model = UserModel
+
+class Query(graphene.ObjectType):
+    users = graphene.List(User)
+
+    def resolve_users(self, info):
+        query = User.get_query(info)  # SQLAlchemy query
+        return query.all()
+
+schema = graphene.Schema(query=Query)
+```
+
+### Full Examples
+
+To learn more check out the following [examples](examples/):
+
+- [Flask SQLAlchemy example](examples/flask_sqlalchemy)
+- [Nameko SQLAlchemy example](examples/nameko_sqlalchemy)
+
+## Contributing
+
+After cloning this repo, ensure dependencies are installed by running:
+
+```sh
+python setup.py install
+```
+
+After developing, the full test suite can be evaluated by running:
+
+```sh
+python setup.py test # Use --pytest-args="-v -s" for verbose mode
+```
